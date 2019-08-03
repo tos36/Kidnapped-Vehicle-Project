@@ -21,6 +21,8 @@
 using std::string;
 using std::vector;
 
+using namespace std;
+
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
    * TODO: Set the number of particles. Initialize all particles to 
@@ -60,6 +62,32 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    *  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
+  double x_f, y_f, theta_f;
+  
+  for(int i=0; i < num_particles; ++i){
+    Particle par = particles[i];
+    
+    if(yaw_rate==0){
+      x_f = par.x + velocity * delta_t * cos(par.theta);
+      y_f = par.y + velocity * delta_t * sin(par.theta);
+    }else{
+      x_f = par.x + velocity * (sin(par.theta + yaw_rate * delta_t) - sin(par.theta)) / yaw_rate;
+      y_f = par.y + velocity * (cos(par.theta) - cos(par.theta + yaw_rate * delta_t)) / yaw_rate;
+    }
+    
+    theta_f = par.theta + yaw_rate * delta_t;
+    
+    // Gaussian distribution for x, y, theta
+    default_random_engine gen;
+    normal_distribution<double> dist_x(x_f, std_pos[0]);
+    normal_distribution<double> dist_y(y_f, std_pos[1]);
+    normal_distribution<double> dist_theta(theta_f, std_pos[2]);
+    
+    particles[i].x = dist_x(gen);
+    particles[i].y = dist_y(gen);
+    particles[i].theta = dist_theta(gen);
+    
+  }
 
 }
 
@@ -73,6 +101,22 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   probably find it useful to implement this method and use it as a helper 
    *   during the updateWeights phase.
    */
+  double dist_temp;
+  for(int i=0; i<observations.size(); ++i){
+    double dist_min = 99999;
+    int nearest_id = -1;
+    for(int j=0; j<predicted.size(); ++j){
+      double delta_x = observations[i].x - predicted[j].x;
+      double delta_y = observations[i].y - predicted[j].y;
+      dist_temp = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+      
+      if (dist_temp < dist_min){
+        dist_min = dist_temp;
+        nearest_id = predicted[j].id;
+      }
+    }
+    observations[i].id = nearest_id;
+  }
 
 }
 
