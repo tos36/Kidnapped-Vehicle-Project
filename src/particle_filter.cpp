@@ -246,7 +246,8 @@ void ParticleFilter::resample() {
   for (int i=0; i<num_particles; ++i){
     new_particles.push_back(particles[index(gen)]);
   }
-  particles = new_particles;
+  // to avoid the deep copy of vector data, using move semantics
+  particles = std::move(new_particles);
    
 
  //  std::cout << "resample end" << std::endl;
